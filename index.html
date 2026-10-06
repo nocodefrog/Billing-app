@@ -155,20 +155,25 @@
 
 <div class="wrap">
   <div class="card">
-    <h2>New Bill</h2>
-    <div class="row">
+    <div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
       <div>
-        <label>Invoice No.</label>
-        <input id="invNo" readonly />
+        <label style="margin-bottom:2px;">From</label>
+        <div id="billCompanyName" style="color:var(--ink);font-size:1.15rem;font-weight:700;">BillDesk</div>
       </div>
+      <div style="text-align:right;">
+        <label style="margin-bottom:2px;">Invoice No.</label>
+        <input id="invNo" readonly style="text-align:right;" />
+      </div>
+    </div>
+    <div class="row">
       <div>
         <label>Date</label>
         <input id="invDate" type="date" />
       </div>
     </div>
-    <div class="row">
+    <div class="row" style="border-top:1px solid var(--line);padding-top:12px;">
       <div>
-        <label>Customer Name</label>
+        <label style="font-weight:600;">Bill To — Customer Name</label>
         <input id="custName" placeholder="Customer name" />
       </div>
       <div>
@@ -217,7 +222,9 @@ shopInput.addEventListener('input', () => {
   shopName = shopInput.value;
   localStorage.setItem('billdesk_shopname', shopName);
   document.getElementById('shopTitle').textContent = shopName || 'BillDesk';
+  document.getElementById('billCompanyName').textContent = shopName || 'BillDesk';
 });
+document.getElementById('billCompanyName').textContent = shopName || 'BillDesk';
 
 function nextInvoiceNo(){
   const last = parseInt(localStorage.getItem('billdesk_lastinv') || '0', 10);
@@ -282,6 +289,7 @@ function saveBill(){
   const taxPct = parseFloat(document.getElementById('taxPct').value)||0;
   const grand = subtotal + subtotal*taxPct/100;
   const bill = {
+    shopName: shopName,
     invNo: document.getElementById('invNo').value,
     date: document.getElementById('invDate').value,
     custName: document.getElementById('custName').value,
@@ -298,6 +306,7 @@ function saveBill(){
 
 function loadBill(i){
   const b = bills[i];
+  document.getElementById('billCompanyName').textContent = b.shopName || shopName || 'BillDesk';
   document.getElementById('invNo').value = b.invNo;
   document.getElementById('invDate').value = b.date;
   document.getElementById('custName').value = b.custName;

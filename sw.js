@@ -1,4 +1,4 @@
-const CACHE_NAME = 'billdesk-v1';
+const CACHE_NAME = 'billdesk-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -31,5 +31,4 @@ self.addEventListener('fetch', (event) => {
         return response;
       }).catch(() => cached);
     })
-  );
-});
+  );});
