@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BillDesk — Offline Billing</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0F5B4C">
+<style>
+  :root{
+    --bg:#F6F7F9;
+    --panel:#FFFFFF;
+    --ink:#1C2430;
+    --muted:#5B6472;
+    --line:#E3E7EC;
+    --accent:#0F5B4C;
+    --accent-ink:#FFFFFF;
+    --danger:#B3423A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  header{
+    padding:20px 24px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  header h1{margin:0;font-size:1.3rem;font-weight:700;letter-spacing:-0.01em;}
+  header input{
+    background:rgba(255,255,255,0.15);
+    border:1px solid rgba(255,255,255,0.3);
+    color:#fff;
+    padding:8px 10px;
+    border-radius:6px;
+    font-size:0.9rem;
+  }
+  header input::placeholder{color:rgba(255,255,255,0.7);}
+  .wrap{
+    max-width:1100px;
+    margin:0 auto;
+    padding:20px;
+    display:grid;
+    grid-template-columns:1.1fr 0.9fr;
+    gap:20px;
+  }
+  @media(max-width:860px){.wrap{grid-template-columns:1fr;}}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px;
+  }
+  .card h2{margin:0 0 14px 0;font-size:1rem;color:var(--muted);font-weight:600;}
+  .row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .row label{flex:1;min-width:140px;font-size:0.85rem;color:var(--muted);display:block;margin-bottom:4px;}
+  input,select{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-size:0.92rem;
+    color:var(--ink);
+    background:#fff;
+  }
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  table{width:100%;border-collapse:collapse;margin-top:6px;}
+  th{
+    text-align:left;
+    font-size:0.78rem;
+    color:var(--muted);
+    font-weight:600;
+    padding:6px 4px;
+    border-bottom:1px solid var(--line);
+  }
+  td{padding:6px 4px;border-bottom:1px solid var(--line);}
+  td input{padding:6px 7px;font-size:0.88rem;}
+  .amt{text-align:right;font-variant-numeric:tabular-nums;}
+  .rm-btn{
+    background:none;border:none;color:var(--danger);
+    cursor:pointer;font-size:1.1rem;padding:0 6px;
+  }
+  .add-row-btn{
+    margin-top:10px;
+    background:none;
+    border:1px dashed var(--line);
+    color:var(--accent);
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:0.85rem;
+    width:100%;
+  }
+  .totals{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;}
+  .totals .line{display:flex;justify-content:space-between;padding:4px 0;font-size:0.92rem;}
+  .totals .grand{font-weight:700;font-size:1.15rem;color:var(--accent);border-top:1px solid var(--line);margin-top:6px;padding-top:10px;}
+  .tax-input{width:70px;display:inline-block;}
+  .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  button.primary{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:11px 18px;
+    border-radius:7px;
+    font-size:0.92rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  button.secondary{
+    background:#fff;
+    color:var(--accent);
+    border:1px solid var(--accent);
+    padding:11px 18px;
+    border-radius:7px;
+    font-size:0.92rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .history-item{
+    padding:10px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    margin-bottom:8px;
+    cursor:pointer;
+    font-size:0.88rem;
+  }
+  .history-item:hover{border-color:var(--accent);}
+  .history-item .hi-top{display:flex;justify-content:space-between;font-weight:600;}
+  .history-item .hi-sub{color:var(--muted);font-size:0.8rem;margin-top:2px;}
+  .empty{color:var(--muted);font-size:0.85rem;text-align:center;padding:20px 0;}
+  .status{font-size:0.8rem;color:var(--muted);margin-top:8px;}
+  @media print{
+    header, .no-print, #history-card{display:none !important;}
+    body{background:#fff;}
+    .wrap{grid-template-columns:1fr;max-width:700px;}
+    .card{border:none;padding:0;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="shopTitle">BillDesk</h1>
+  <input id="shopNameInput" placeholder="Your shop/business name" />
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>New Bill</h2>
+    <div class="row">
+      <div>
+        <label>Invoice No.</label>
+        <input id="invNo" readonly />
+      </div>
+      <div>
+        <label>Date</label>
+        <input id="invDate" type="date" />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Customer Name</label>
+        <input id="custName" placeholder="Customer name" />
+      </div>
+      <div>
+        <label>Phone (optional)</label>
+        <input id="custPhone" placeholder="Phone number" />
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Item</th><th style="width:60px">Qty</th><th style="width:85px">Rate</th><th style="width:90px">Amount</th><th class="no-print" style="width:30px"></th></tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+    <button class="add-row-btn no-print" onclick="addRow()">+ Add item</button>
+
+    <div class="totals">
+      <div class="line"><span>Subtotal</span><span id="subtotal">₹0.00</span></div>
+      <div class="line"><span>Tax (<input class="tax-input no-print" id="taxPct" type="number" value="0" min="0" onchange="render()">%)</span><span id="taxAmt">₹0.00</span></div>
+      <div class="line grand"><span>Total</span><span id="grandTotal">₹0.00</span></div>
+    </div>
+
+    <div class="actions no-print">
+      <button class="primary" onclick="saveBill()">Save Bill</button>
+      <button class="secondary" onclick="printBill()">Print / PDF</button>
+      <button class="secondary" onclick="newBill()">New Bill</button>
+    </div>
+    <div class="status no-print" id="statusMsg"></div>
+  </div>
+
+  <div class="card" id="history-card">
+    <h2>Saved Bills</h2>
+    <div id="historyList"><div class="empty">No bills saved yet</div></div>
+  </div>
+</div>
+
+<script>
+let items = [];
+let bills = JSON.parse(localStorage.getItem('billdesk_bills') || '[]');
+let shopName = localStorage.getItem('billdesk_shopname') || '';
+
+const shopInput = document.getElementById('shopNameInput');
+shopInput.value = shopName;
+document.getElementById('shopTitle').textContent = shopName || 'BillDesk';
+shopInput.addEventListener('input', () => {
+  shopName = shopInput.value;
+  localStorage.setItem('billdesk_shopname', shopName);
+  document.getElementById('shopTitle').textContent = shopName || 'BillDesk';
+});
+
+function nextInvoiceNo(){
+  const last = parseInt(localStorage.getItem('billdesk_lastinv') || '0', 10);
+  return last + 1;
+}
+
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function addRow(desc='', qty=1, rate=0){
+  items.push({desc, qty, rate});
+  render();
+}
+
+function removeRow(i){
+  items.splice(i,1);
+  render();
+}
+
+function render(){
+  const body = document.getElementById('itemsBody');
+  body.innerHTML = '';
+  items.forEach((it, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input value="${escapeHtml(it.desc)}" onchange="items[${i}].desc=this.value" placeholder="Item description"></td>
+      <td><input type="number" min="0" value="${it.qty}" onchange="items[${i}].qty=parseFloat(this.value)||0; render()"></td>
+      <td><input type="number" min="0" value="${it.rate}" onchange="items[${i}].rate=parseFloat(this.value)||0; render()"></td>
+      <td class="amt">₹${(it.qty*it.rate).toFixed(2)}</td>
+      <td class="no-print"><button class="rm-btn" onclick="removeRow(${i})">&times;</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  const subtotal = items.reduce((s,it)=>s+it.qty*it.rate,0);
+  const taxPct = parseFloat(document.getElementById('taxPct').value)||0;
+  const taxAmt = subtotal*taxPct/100;
+  const grand = subtotal+taxAmt;
+  document.getElementById('subtotal').textContent = '₹'+subtotal.toFixed(2);
+  document.getElementById('taxAmt').textContent = '₹'+taxAmt.toFixed(2);
+  document.getElementById('grandTotal').textContent = '₹'+grand.toFixed(2);
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function newBill(){
+  items = [];
+  addRow();
+  document.getElementById('invNo').value = 'INV-' + String(nextInvoiceNo()).padStart(4,'0');
+  document.getElementById('invDate').value = todayStr();
+  document.getElementById('custName').value = '';
+  document.getElementById('custPhone').value = '';
+  document.getElementById('taxPct').value = 0;
+  document.getElementById('statusMsg').textContent = '';
+  render();
+}
+
+function saveBill(){
+  const subtotal = items.reduce((s,it)=>s+it.qty*it.rate,0);
+  const taxPct = parseFloat(document.getElementById('taxPct').value)||0;
+  const grand = subtotal + subtotal*taxPct/100;
+  const bill = {
+    invNo: document.getElementById('invNo').value,
+    date: document.getElementById('invDate').value,
+    custName: document.getElementById('custName').value,
+    custPhone: document.getElementById('custPhone').value,
+    items: JSON.parse(JSON.stringify(items)),
+    taxPct, total: grand
+  };
+  bills.unshift(bill);
+  localStorage.setItem('billdesk_bills', JSON.stringify(bills));
+  localStorage.setItem('billdesk_lastinv', String(nextInvoiceNo()));
+  document.getElementById('statusMsg').textContent = 'Saved ✓ ' + bill.invNo;
+  renderHistory();
+}
+
+function loadBill(i){
+  const b = bills[i];
+  document.getElementById('invNo').value = b.invNo;
+  document.getElementById('invDate').value = b.date;
+  document.getElementById('custName').value = b.custName;
+  document.getElementById('custPhone').value = b.custPhone;
+  document.getElementById('taxPct').value = b.taxPct;
+  items = JSON.parse(JSON.stringify(b.items));
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderHistory(){
+  const list = document.getElementById('historyList');
+  if(bills.length===0){
+    list.innerHTML = '<div class="empty">No bills saved yet</div>';
+    return;
+  }
+  list.innerHTML = '';
+  bills.slice(0,30).forEach((b,i) => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.onclick = () => loadBill(i);
+    div.innerHTML = `
+      <div class="hi-top"><span>${escapeHtml(b.invNo)}</span><span>₹${b.total.toFixed(2)}</span></div>
+      <div class="hi-sub">${escapeHtml(b.custName||'Walk-in')} · ${b.date}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function printBill(){
+  window.print();
+}
+
+// init
+renderHistory();
+newBill();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+
+</body>
+</html>
